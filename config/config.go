@@ -10,6 +10,7 @@ type Config struct {
 	// 模型类型配置
 	ChatModelType      string
 	EmbeddingModelType string
+	VectorDBType       string
 
 	ArkConf    ArkConfig
 	OpenAIConf OpenAIConfig
@@ -49,6 +50,7 @@ func LoadConfig() (*Config, error) {
 	config := &Config{
 		ChatModelType:      getEnv("CHAT_MODEL_TYPE", "ark"),
 		EmbeddingModelType: getEnv("EMBEDDING_MODEL_TYPE", "ark"),
+		VectorDBType:       getEnv("VECTOR_DB_TYPE", "milvus"),
 
 		ArkConf: ArkConfig{
 			ArkKey:            getEnv("ARK_KEY", ""),
@@ -64,7 +66,7 @@ func LoadConfig() (*Config, error) {
 			MilvusAddr:          getEnv("MILVUS_ADDR", "localhost:27017"),
 			MilvusUserName:      getEnv("MILVUS_USERNAME", ""),
 			MilvusPassword:      getEnv("MILVUS_PASSWORD", ""),
-			SimilarityThreshold: getEnv("MILVUS_SIMILARITY_THRESHOLD", ""),
+			SimilarityThreshold: getEnv("MILVUS_SIMILARITY_THRESHOLD", "0.7"),
 			CollectionName:      getEnv("MILVUS_COLLECTION_NAME", ""),
 			TopK:                getEnv("MILVUS_TOPK", "10"),
 		},

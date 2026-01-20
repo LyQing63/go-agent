@@ -1,9 +1,8 @@
 package api
 
 import (
+	"go-agent/rag/tools/db"
 	"net/http"
-
-	"go-agent/rag/tools"
 
 	"github.com/gin-gonic/gin"
 )
@@ -21,7 +20,7 @@ type MilvusDropCollectionResponse struct {
 
 // ListMilvusCollections 返回所有 Milvus 集合名称
 func ListMilvusCollections(c *gin.Context) {
-	if tools.Milvus == nil {
+	if db.Milvus == nil {
 		c.JSON(http.StatusInternalServerError, MilvusCollectionsResponse{
 			Success: false,
 			Message: "Milvus 客户端未初始化",
@@ -29,7 +28,7 @@ func ListMilvusCollections(c *gin.Context) {
 		return
 	}
 
-	collections, err := tools.Milvus.ListCollections(c.Request.Context())
+	collections, err := db.Milvus.ListCollections(c.Request.Context())
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, MilvusCollectionsResponse{
 			Success: false,
@@ -60,7 +59,7 @@ func DeleteMilvusCollection(c *gin.Context) {
 		return
 	}
 
-	if tools.Milvus == nil {
+	if db.Milvus == nil {
 		c.JSON(http.StatusInternalServerError, MilvusDropCollectionResponse{
 			Success: false,
 			Message: "Milvus 客户端未初始化",
@@ -68,8 +67,8 @@ func DeleteMilvusCollection(c *gin.Context) {
 		return
 	}
 
-	_ = tools.Milvus.ReleaseCollection(c.Request.Context(), collectionName)
-	if err := tools.Milvus.DropCollection(c.Request.Context(), collectionName); err != nil {
+	_ = db.Milvus.ReleaseCollection(c.Request.Context(), collectionName)
+	if err := db.Milvus.DropCollection(c.Request.Context(), collectionName); err != nil {
 		c.JSON(http.StatusInternalServerError, MilvusDropCollectionResponse{
 			Success: false,
 			Message: "删除集合失败: " + err.Error(),

@@ -2,7 +2,7 @@ package compose
 
 import (
 	"context"
-	"go-agent/rag/tools"
+	"go-agent/rag/tools/retriever"
 
 	"github.com/cloudwego/eino/compose"
 	"github.com/cloudwego/eino/schema"
@@ -17,7 +17,7 @@ func BuildRetrieverGraph(ctx context.Context) (compose.Runnable[string, []*schem
 	g := compose.NewGraph[string, []*schema.Document]()
 
 	// 直接复用全局初始化的 Retriever
-	_ = g.AddRetrieverNode(MilvusRetriever, tools.Retriever)
+	_ = g.AddRetrieverNode(MilvusRetriever, retriever.Retriever)
 
 	_ = g.AddEdge(compose.START, MilvusRetriever)
 	_ = g.AddEdge(MilvusRetriever, compose.END)

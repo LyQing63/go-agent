@@ -3,6 +3,7 @@ package compose
 import (
 	"context"
 	"go-agent/rag/tools"
+	"go-agent/rag/tools/indexer"
 	"log"
 
 	"github.com/cloudwego/eino/components/document"
@@ -26,7 +27,7 @@ func BuildIndexingGraph(ctx context.Context) (compose.Runnable[document.Source, 
 	// 添加节点
 	_ = g.AddLoaderNode(FileLoader, tools.Loader)
 	_ = g.AddDocumentTransformerNode(TextSplitter, tools.Splitter)
-	_ = g.AddIndexerNode(MilvusIndexer, tools.Indexer)
+	_ = g.AddIndexerNode(MilvusIndexer, indexer.Indexer)
 	_ = g.AddLambdaNode(DocumentParser, compose.InvokableLambda(BuildParseNode))
 	_ = g.AddLambdaNode(DebugChunks, compose.InvokableLambda(func(ctx context.Context, docs []*schema.Document) ([]*schema.Document, error) {
 		for i, doc := range docs {

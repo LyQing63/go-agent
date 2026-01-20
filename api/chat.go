@@ -1,7 +1,7 @@
 package api
 
 import (
-	"go-agent/model"
+	"go-agent/model/chat_model"
 	"io"
 	"net/http"
 
@@ -36,7 +36,7 @@ func ChatGenerate(c *gin.Context) {
 	}
 
 	// 检查模型是否已初始化
-	if model.CM == nil {
+	if chat_model.CM == nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "ChatModel 未初始化"})
 		return
 	}
@@ -63,7 +63,7 @@ func ChatGenerate(c *gin.Context) {
 	messages = append(messages, schema.UserMessage(req.Question))
 
 	// 调用模型的 Generate 方法
-	response, err := model.CM.Generate(ctx, messages)
+	response, err := chat_model.CM.Generate(ctx, messages)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to generate answer: " + err.Error()})
 		return
@@ -85,7 +85,7 @@ func ChatStream(c *gin.Context) {
 	}
 
 	// 检查模型是否已初始化
-	if model.CM == nil {
+	if chat_model.CM == nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "ChatModel 未初始化"})
 		return
 	}
@@ -124,7 +124,7 @@ func ChatStream(c *gin.Context) {
 	// 添加当前问题
 	messages = append(messages, schema.UserMessage(req.Question))
 
-	streamReader, err := model.CM.Stream(c.Request.Context(), messages)
+	streamReader, err := chat_model.CM.Stream(c.Request.Context(), messages)
 	if err != nil {
 		c.SSEvent("error", gin.H{"error": err.Error()})
 		flusher.Flush()

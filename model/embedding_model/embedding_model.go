@@ -1,4 +1,4 @@
-package model
+package embedding_model
 
 import (
 	"context"
@@ -14,6 +14,8 @@ var embeddingModelRegistry = make(map[string]EmbeddingModelFactory)
 var Embedding embedding.Embedder
 
 func NewEmbeddingModel(ctx context.Context) (embedding.Embedder, error) {
+	initArk()
+	initOpenAI()
 	create, ok := embeddingModelRegistry[config.Cfg.EmbeddingModelType]
 	if !ok {
 		return nil, fmt.Errorf("不支持的 EmbeddingModel 类型: %s", config.Cfg.EmbeddingModelType)
@@ -22,7 +24,7 @@ func NewEmbeddingModel(ctx context.Context) (embedding.Embedder, error) {
 	return create(ctx)
 }
 
-// RegisterEmbeddingModel 注册嵌入模型进入工厂
-func RegisterEmbeddingModel(name string, factory EmbeddingModelFactory) {
+// registerEmbeddingModel 注册嵌入模型进入工厂
+func registerEmbeddingModel(name string, factory EmbeddingModelFactory) {
 	embeddingModelRegistry[name] = factory
 }

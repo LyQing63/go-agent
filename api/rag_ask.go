@@ -4,7 +4,7 @@ import (
 	"context"
 	"fmt"
 	"go-agent/config"
-	"go-agent/model"
+	"go-agent/model/chat_model"
 	"go-agent/rag/compose"
 	"log"
 	"net/http"
@@ -192,7 +192,7 @@ func RAGAsk(c *gin.Context) {
 // generateRAGAnswer 基于检索到的文档生成回答
 func generateRAGAnswer(ctx context.Context, query, documentsText string) (*schema.Message, error) {
 	// 检查模型是否已初始化
-	if model.CM == nil {
+	if chat_model.CM == nil {
 		return nil, fmt.Errorf("ChatModel 未初始化")
 	}
 
@@ -219,7 +219,7 @@ func generateRAGAnswer(ctx context.Context, query, documentsText string) (*schem
 	}
 
 	// 调用 ChatModel 生成回答
-	answer, err := model.CM.Generate(ctx, messages)
+	answer, err := chat_model.CM.Generate(ctx, messages)
 	if err != nil {
 		return nil, fmt.Errorf("生成回答失败: %w", err)
 	}

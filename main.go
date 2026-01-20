@@ -4,10 +4,12 @@ import (
 	"context"
 	"go-agent/api"
 	"go-agent/config"
-	"go-agent/model"
-	"go-agent/model/ark"
-	"go-agent/model/openai"
+	"go-agent/model/chat_model"
+	"go-agent/model/embedding_model"
 	"go-agent/rag/tools"
+	"go-agent/rag/tools/db"
+	"go-agent/rag/tools/indexer"
+	"go-agent/rag/tools/retriever"
 	"log"
 )
 
@@ -22,38 +24,32 @@ func main() {
 	}
 
 	// 初始化数据库
-	tools.Milvus, err = tools.NewMilvus(ctx)
+	db.Milvus, err = db.NewMilvus(ctx)
 	if err != nil {
 		log.Fatalf("Milvus init fail: %v", err)
 	}
-	defer tools.Milvus.Close()
-
-	// 注册模型
-	ark.InitChatModel()
-	ark.InitEmbeddingModel()
-	openai.InitChatModel()
-	openai.InitEmbeddingModel()
+	defer db.Milvus.Close()
 
 	// 初始化模型
-	model.CM, err = model.NewChatModel(ctx)
+	chat_model.CM, err = chat_model.NewChatModel(ctx)
 	if err != nil {
 		log.Fatalf("ChatModel init fail: %v", err)
 	}
 
 	// 初始化嵌入模型
-	model.Embedding, err = model.NewEmbeddingModel(ctx)
+	embedding_model.Embedding, err = embedding_model.NewEmbeddingModel(ctx)
 	if err != nil {
 		log.Fatalf("embedder init fail: %v", err)
 	}
 
 	// 初始化检索器
-	tools.Indexer, err = tools.NewIndexer(ctx)
+	indexer.Indexer, err = indexer.NewIndexer(ctx)
 	if err != nil {
 		log.Fatalf("indexer init fail: %v", err)
 	}
 
 	// 初始化召回器
-	tools.Retriever, err = tools.NewRetriever(ctx)
+	retriever.Retriever, err = retriever.NewRetriever(ctx)
 	if err != nil {
 		log.Fatalf("retriever init fail: %v", err)
 	}

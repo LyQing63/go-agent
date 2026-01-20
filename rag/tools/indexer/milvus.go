@@ -1,22 +1,21 @@
-package tools
+package indexer
 
 import (
 	"context"
 	"encoding/json"
 	"fmt"
 	"go-agent/config"
-	"go-agent/model"
+	"go-agent/model/embedding_model"
+	"go-agent/rag/tools/db"
 	"log"
 	"strings"
 	"time"
 
 	"github.com/cloudwego/eino-ext/components/indexer/milvus"
+	"github.com/cloudwego/eino/components/indexer"
 	"github.com/cloudwego/eino/schema"
 	"github.com/milvus-io/milvus-sdk-go/v2/entity"
 )
-
-// Indexer 检索器 把向量化的结果塞入milvus
-var Indexer *milvus.Indexer
 
 type floatSchema struct {
 	ID       string    `json:"id" milvus:"name:id"`
@@ -25,44 +24,46 @@ type floatSchema struct {
 	Metadata []byte    `json:"metadata" milvus:"name:metadata"`
 }
 
-func NewIndexer(ctx context.Context) (*milvus.Indexer, error) {
-	dim, err := getEmbeddingDim(ctx)
-	if err != nil {
-		return nil, err
-	}
-	log.Printf("embedding dim: %d", dim)
-
-	indexer, err := milvus.NewIndexer(ctx, buildIndexerConfig(dim))
-	if err != nil {
-		// 自动处理 schema 不匹配：删除旧集合并重建
-		if strings.Contains(err.Error(), "collection schema not match") {
-			log.Printf("collection schema 不匹配，准备删除旧集合并重建: %s", config.Cfg.MilvusConf.CollectionName)
-			_ = Milvus.ReleaseCollection(ctx, config.Cfg.MilvusConf.CollectionName)
-			if dropErr := Milvus.DropCollection(ctx, config.Cfg.MilvusConf.CollectionName); dropErr != nil {
-				return nil, fmt.Errorf("drop collection failed: %w", dropErr)
-			}
-			if waitErr := waitCollectionDropped(ctx, config.Cfg.MilvusConf.CollectionName, 15*time.Second); waitErr != nil {
-				// 兜底：切换新集合名，避免启动失败
-				newName := fmt.Sprintf("%s_%d", config.Cfg.MilvusConf.CollectionName, time.Now().Unix())
-				log.Printf("旧集合仍存在，改用新集合: %s", newName)
-				config.Cfg.MilvusConf.CollectionName = newName
-			}
-			indexer, err = milvus.NewIndexer(ctx, buildIndexerConfig(dim))
-			if err != nil {
-				return nil, err
-			}
-		} else {
+func initMilvus() {
+	registerIndexer("milvus", func(ctx context.Context) (indexer.Indexer, error) {
+		dim, err := getEmbeddingDim(ctx)
+		if err != nil {
 			return nil, err
 		}
-	}
+		log.Printf("embedding dim: %d", dim)
 
-	return indexer, nil
+		indexer, err := milvus.NewIndexer(ctx, buildIndexerConfig(dim))
+		if err != nil {
+			// 自动处理 schema 不匹配：删除旧集合并重建
+			if strings.Contains(err.Error(), "collection schema not match") {
+				log.Printf("collection schema 不匹配，准备删除旧集合并重建: %s", config.Cfg.MilvusConf.CollectionName)
+				_ = db.Milvus.ReleaseCollection(ctx, config.Cfg.MilvusConf.CollectionName)
+				if dropErr := db.Milvus.DropCollection(ctx, config.Cfg.MilvusConf.CollectionName); dropErr != nil {
+					return nil, fmt.Errorf("drop collection failed: %w", dropErr)
+				}
+				if waitErr := waitCollectionDropped(ctx, config.Cfg.MilvusConf.CollectionName, 15*time.Second); waitErr != nil {
+					// 兜底：切换新集合名，避免启动失败
+					newName := fmt.Sprintf("%s_%d", config.Cfg.MilvusConf.CollectionName, time.Now().Unix())
+					log.Printf("旧集合仍存在，改用新集合: %s", newName)
+					config.Cfg.MilvusConf.CollectionName = newName
+				}
+				indexer, err = milvus.NewIndexer(ctx, buildIndexerConfig(dim))
+				if err != nil {
+					return nil, err
+				}
+			} else {
+				return nil, err
+			}
+		}
+
+		return indexer, nil
+	})
 }
 
 func buildIndexerConfig(dim int) *milvus.IndexerConfig {
 	return &milvus.IndexerConfig{
-		Client:     Milvus,
-		Embedding:  model.Embedding,
+		Client:     db.Milvus,
+		Embedding:  embedding_model.Embedding,
 		Collection: config.Cfg.MilvusConf.CollectionName,
 		MetricType: milvus.COSINE,
 		Fields: []*entity.Field{
@@ -121,7 +122,7 @@ func buildIndexerConfig(dim int) *milvus.IndexerConfig {
 func waitCollectionDropped(ctx context.Context, name string, timeout time.Duration) error {
 	deadline := time.Now().Add(timeout)
 	for time.Now().Before(deadline) {
-		exists, err := Milvus.HasCollection(ctx, name)
+		exists, err := db.Milvus.HasCollection(ctx, name)
 		if err != nil {
 			return fmt.Errorf("check collection failed: %w", err)
 		}
@@ -134,10 +135,10 @@ func waitCollectionDropped(ctx context.Context, name string, timeout time.Durati
 }
 
 func getEmbeddingDim(ctx context.Context) (int, error) {
-	if model.Embedding == nil {
+	if embedding_model.Embedding == nil {
 		return 0, fmt.Errorf("embedding not initialized")
 	}
-	vecs, err := model.Embedding.EmbedStrings(ctx, []string{"dim"})
+	vecs, err := embedding_model.Embedding.EmbedStrings(ctx, []string{"dim"})
 	if err != nil {
 		return 0, fmt.Errorf("failed to get embedding dim: %w", err)
 	}
