@@ -16,6 +16,7 @@ var Embedding embedding.Embedder
 func NewEmbeddingModel(ctx context.Context) (embedding.Embedder, error) {
 	initArk()
 	initOpenAI()
+	initQwen()
 	create, ok := embeddingModelRegistry[config.Cfg.EmbeddingModelType]
 	if !ok {
 		return nil, fmt.Errorf("不支持的 EmbeddingModel 类型: %s", config.Cfg.EmbeddingModelType)

@@ -8,6 +8,7 @@ import (
 	"go-agent/model/embedding_model"
 	"go-agent/rag/tools/db"
 	"log"
+	"strconv"
 	"strings"
 	"time"
 
@@ -31,6 +32,11 @@ func initMilvus() {
 			return nil, err
 		}
 		log.Printf("embedding dim: %d", dim)
+
+		// 检查现有集合的维度是否匹配
+		if err := checkAndDropIfDimMismatch(ctx, config.Cfg.MilvusConf.CollectionName, dim); err != nil {
+			log.Printf("检查集合维度失败: %v", err)
+		}
 
 		indexer, err := milvus.NewIndexer(ctx, buildIndexerConfig(dim))
 		if err != nil {
@@ -146,4 +152,37 @@ func getEmbeddingDim(ctx context.Context) (int, error) {
 		return 0, fmt.Errorf("invalid embedding dim result")
 	}
 	return len(vecs[0]), nil
+}
+
+func checkAndDropIfDimMismatch(ctx context.Context, collectionName string, expectedDim int) error {
+	exists, err := db.Milvus.HasCollection(ctx, collectionName)
+	if err != nil {
+		return fmt.Errorf("check collection exists failed: %w", err)
+	}
+	if !exists {
+		return nil
+	}
+
+	coll, err := db.Milvus.DescribeCollection(ctx, collectionName)
+	if err != nil {
+		return fmt.Errorf("describe collection failed: %w", err)
+	}
+
+	for _, field := range coll.Schema.Fields {
+		if field.DataType == entity.FieldTypeFloatVector {
+			dimStr, ok := field.TypeParams["dim"]
+			if !ok {
+				continue
+			}
+			dim, err := strconv.Atoi(dimStr)
+			if err != nil {
+				continue
+			}
+
+			if dim != expectedDim {
+				log.Fatalf("集合维度不匹配: 现有维度=%d, 预期维度=%d", dim, expectedDim)
+			}
+		}
+	}
+	return nil
 }

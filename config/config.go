@@ -32,8 +32,10 @@ type OpenAIConfig struct {
 }
 
 type QwenConfig struct {
+	BaseUrl       string
 	QwenKey       string
 	QwenChatModel string
+	QwenEmbedding string
 }
 
 type MilvusConfig struct {
@@ -68,6 +70,12 @@ func LoadConfig() (*Config, error) {
 			OpenAIKey:       getEnv("OPENAI_KEY", ""),
 			OpenAIChatModel: getEnv("OPENAI_CHAT_MODEL", "gpt-4"),
 			OpenAIEmbedding: getEnv("OPENAI_EMBEDDING_MODEL", ""),
+		},
+		QwenConf: QwenConfig{
+			BaseUrl:       getEnv("QWEN_BASE_URL", ""),
+			QwenKey:       getEnv("QWEN_KEY", ""),
+			QwenEmbedding: getEnv("QWEN_EMBEDDING_MODEL", ""),
+			QwenChatModel: getEnv("QWEN_CHAT_MODEL", ""),
 		},
 		MilvusConf: MilvusConfig{
 			MilvusAddr:          getEnv("MILVUS_ADDR", "localhost:27017"),
