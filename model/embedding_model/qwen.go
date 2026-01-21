@@ -14,11 +14,8 @@ import (
 )
 
 var (
-	defaultBaseUrl    = "https://dashscope.aliyuncs.com/compatible-mode/v1"
-	defaultRegion     = ""
-	defaultRetryTimes = 2
-	defaultTimeout    = 10 * time.Minute
-	defaultDim        = 2048
+	defaultBaseUrl = "https://dashscope.aliyuncs.com/compatible-mode/v1"
+	defaultDim     = 2048
 )
 
 type EmbeddingConfig struct {
